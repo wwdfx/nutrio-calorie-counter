@@ -121,6 +121,11 @@ export interface TranslationStrings {
   deleteFoodConfirm: string;
   deletePersonalFoodConfirm: string;
   editFood: string;
+  setIcon: string;
+  search: string;
+  foodNamePlaceholder: string;
+  unitPlaceholder: string;
+  example100: string;
   personalFoodDeletedToast: string;
   removeTitle: string;
   removeFavoriteConfirm: string;
@@ -350,6 +355,11 @@ const en: TranslationStrings = {
   deleteFoodConfirm: 'Sure you want to delete this food log?',
   deletePersonalFoodConfirm: 'Sure you want to delete this personal food?',
   editFood: 'Edit Food',
+  setIcon: 'Set Icon',
+  search: 'Search',
+  foodNamePlaceholder: 'e.g. Salad, Sandwich, etc',
+  unitPlaceholder: 'e.g. gram, ml',
+  example100: 'e.g. 100',
   personalFoodDeletedToast: 'Personal food deleted!',
   removeTitle: 'Remove',
   removeFavoriteConfirm: 'Sure you want to remove this food from favorites?',
@@ -573,6 +583,11 @@ const ru: TranslationStrings = {
   deleteFoodConfirm: 'Вы уверены, что хотите удалить эту запись?',
   deletePersonalFoodConfirm: 'Вы уверены, что хотите удалить это личное блюдо?',
   editFood: 'Редактировать блюдо',
+  setIcon: 'Выбрать иконку',
+  search: 'Поиск',
+  foodNamePlaceholder: 'напр. Салат, Сэндвич и т.д.',
+  unitPlaceholder: 'напр. грамм, мл',
+  example100: 'напр. 100',
   personalFoodDeletedToast: 'Личное блюдо удалено!',
   removeTitle: 'Удалить',
   removeFavoriteConfirm: 'Удалить это блюдо из избранного?',
@@ -796,6 +811,11 @@ const uk: TranslationStrings = {
   deleteFoodConfirm: 'Ви впевнені, що хочете видалити цей запис?',
   deletePersonalFoodConfirm: 'Ви впевнені, що хочете видалити цю особисту страву?',
   editFood: 'Редагувати страву',
+  setIcon: 'Обрати іконку',
+  search: 'Пошук',
+  foodNamePlaceholder: 'напр. Салат, Сендвіч тощо',
+  unitPlaceholder: 'напр. грам, мл',
+  example100: 'напр. 100',
   personalFoodDeletedToast: 'Особисту страву видалено!',
   removeTitle: 'Видалити',
   removeFavoriteConfirm: 'Видалити цю страву з обраного?',
