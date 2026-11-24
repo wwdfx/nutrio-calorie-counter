@@ -43,6 +43,7 @@ function AppShell() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="food/add" />
           <Stack.Screen name="food/create" />
+          <Stack.Screen name="food/quick-log" />
           <Stack.Screen name="food/scan" />
           <Stack.Screen name="food/history" />
           <Stack.Screen name="food/[id]" />

@@ -26,9 +26,7 @@ export default function AddFoodIntakeScreen() {
     themeMode,
     t,
     catalogFoods,
-    addFoodIntake,
     addMultipleFoodIntakes,
-    createCustomFood,
     deleteCustomFood,
   } = useNutrio();
   const theme = getThemeColors(themeMode);
@@ -67,11 +65,6 @@ export default function AddFoodIntakeScreen() {
   // Swipe-to-delete state on Personal tab (Stage 8 animation)
   const [swipedFoodId, setSwipedFoodId] = useState<string | null>(null);
   const [pendingDeleteFood, setPendingDeleteFood] = useState<FoodItem | null>(null);
-
-  // Quick Log Modal State
-  const [quickLogOpen, setQuickLogOpen] = useState(false);
-  const [quickName, setQuickName] = useState('');
-  const [quickCals, setQuickCals] = useState('');
 
   const filteredFoods = useMemo(() => {
     return catalogFoods.filter((f) => {
@@ -120,23 +113,6 @@ export default function AddFoodIntakeScreen() {
     setBottomToast(t.personalFoodDeletedToast);
   };
 
-  const handleQuickLogSubmit = async () => {
-    const cals = Number(quickCals) || 250;
-    const custom = await createCustomFood({
-      name: quickName.trim() || `${selectedMeal} Quick Log`,
-      emoji: '⚡',
-      servingGrams: 100,
-      unit: 'gram (g)',
-      calories: cals,
-      carbs: Math.round((cals * 0.45) / 4),
-      protein: Math.round((cals * 0.25) / 4),
-      fat: Math.round((cals * 0.3) / 9),
-    });
-    await addFoodIntake(selectedMeal, custom, 1);
-    setQuickLogOpen(false);
-    router.replace({ pathname: '/food/history', params: { meal: selectedMeal } });
-  };
-
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
       {/* Top Navbar & Controls matching 29_Dark_add food intake */}
@@ -158,33 +134,6 @@ export default function AddFoodIntakeScreen() {
 
           <View style={{ width: 28 }} />
         </View>
-
-        {mealDropdownOpen && (
-          <View style={[styles.mealDropdown, { backgroundColor: theme.card }]}>
-            {MEALS.map((m) => (
-              <TouchableOpacity
-                key={m}
-                style={[
-                  styles.mealOption,
-                  selectedMeal === m && { backgroundColor: COLORS.primary },
-                ]}
-                onPress={() => {
-                  setSelectedMeal(m);
-                  setMealDropdownOpen(false);
-                }}
-              >
-                <Text
-                  style={{
-                    fontWeight: '700',
-                    color: selectedMeal === m ? '#181A20' : theme.text,
-                  }}
-                >
-                  {mealLabel(m)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
 
         {/* Search Bar matching 29_Dark / 30_Dark / 31_Dark */}
         <View style={[styles.searchBar, { backgroundColor: theme.card }]}>
@@ -214,7 +163,9 @@ export default function AddFoodIntakeScreen() {
         <View style={styles.quickActionRow}>
           <TouchableOpacity
             style={[styles.actionBtn, { backgroundColor: theme.card }]}
-            onPress={() => setQuickLogOpen(true)}
+            onPress={() =>
+              router.push({ pathname: '/food/quick-log', params: { meal: selectedMeal } })
+            }
           >
             <Ionicons name="flash-outline" size={18} color={theme.text} />
             <Text style={[styles.actionBtnText, { color: theme.text }]}>
@@ -577,64 +528,64 @@ export default function AddFoodIntakeScreen() {
         </View>
       </Modal>
 
-      {/* Quick Log Modal */}
-      <Modal
-        visible={quickLogOpen}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setQuickLogOpen(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={[styles.modalCard, { backgroundColor: theme.card }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: theme.text }]}>
-                ⚡ {t.quickLog} ({mealLabel(selectedMeal)})
-              </Text>
-              <TouchableOpacity onPress={() => setQuickLogOpen(false)}>
-                <Ionicons name="close" size={24} color={theme.text} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={[styles.inputLabel, { color: theme.text }]}>
-              {t.foodName}
-            </Text>
-            <TextInput
+      {/* Centered Floating Meal Selector Popover matching Stage 10 Screen 2 */}
+      {mealDropdownOpen && (
+        <View style={styles.popoverOverlay} pointerEvents="box-none">
+          <TouchableOpacity
+            style={styles.popoverBackdrop}
+            activeOpacity={1}
+            onPress={() => setMealDropdownOpen(false)}
+          />
+          <View style={styles.popoverContainer}>
+            <View
               style={[
-                styles.modalInput,
-                { backgroundColor: theme.background, color: theme.text },
+                styles.popoverCaret,
+                {
+                  backgroundColor: theme.card,
+                  borderTopColor: theme.inputBorder,
+                  borderLeftColor: theme.inputBorder,
+                },
               ]}
-              value={quickName}
-              onChangeText={setQuickName}
-              placeholder="e.g. Stuffed Flatbread"
-              placeholderTextColor={theme.textMuted}
             />
-
-            <Text style={[styles.inputLabel, { color: theme.text }]}>
-              {t.caloriesKcal}
-            </Text>
-            <TextInput
+            <View
               style={[
-                styles.modalInput,
-                { backgroundColor: theme.background, color: theme.text },
+                styles.popoverCard,
+                { backgroundColor: theme.card, borderColor: theme.inputBorder },
               ]}
-              value={quickCals}
-              onChangeText={setQuickCals}
-              placeholder="e.g. 215"
-              placeholderTextColor={theme.textMuted}
-              keyboardType="numeric"
-            />
-
-            <TouchableOpacity
-              style={styles.modalPrimaryBtn}
-              onPress={handleQuickLogSubmit}
             >
-              <Text style={styles.modalPrimaryText}>
-                {t.addTo} {mealLabel(selectedMeal)}
-              </Text>
-            </TouchableOpacity>
+              {MEALS.map((m, idx) => {
+                const isActive = selectedMeal === m;
+                return (
+                  <View key={m}>
+                    <TouchableOpacity
+                      style={styles.popoverOption}
+                      onPress={() => {
+                        setSelectedMeal(m);
+                        setMealDropdownOpen(false);
+                      }}
+                      activeOpacity={0.75}
+                    >
+                      <Text
+                        style={[
+                          styles.popoverOptionText,
+                          { color: isActive ? COLORS.primary : theme.text },
+                        ]}
+                      >
+                        {mealLabel(m)}
+                      </Text>
+                    </TouchableOpacity>
+                    {idx < MEALS.length - 1 && (
+                      <View
+                        style={[styles.popoverDivider, { backgroundColor: theme.divider }]}
+                      />
+                    )}
+                  </View>
+                );
+              })}
+            </View>
           </View>
         </View>
-      </Modal>
+      )}
     </View>
   );
 }
@@ -662,6 +613,60 @@ const styles = StyleSheet.create({
   navbarTitle: {
     fontSize: 22,
     fontWeight: '800',
+  },
+  popoverOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 40,
+    alignItems: 'center',
+  },
+  popoverBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  popoverContainer: {
+    marginTop: 88,
+    alignItems: 'center',
+    zIndex: 45,
+  },
+  popoverCaret: {
+    width: 14,
+    height: 14,
+    transform: [{ rotate: '45deg' }],
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    marginBottom: -8,
+    zIndex: 46,
+  },
+  popoverCard: {
+    width: 176,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 18,
+    paddingVertical: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.45,
+    shadowRadius: 18,
+    elevation: 10,
+  },
+  popoverOption: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  popoverOptionText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  popoverDivider: {
+    height: 1,
+    width: '100%',
   },
   mealDropdown: {
     flexDirection: 'row',

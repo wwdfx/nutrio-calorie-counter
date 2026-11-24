@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,65 +12,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, getThemeColors } from '@/constants/theme';
 import { useNutrio, MealType } from '@/context/NutrioContext';
-
-interface FoodIconOption {
-  emoji: string;
-  keywords: string;
-}
-
-// 5-column food icon grid matching Stage 9 Screen 1 (Set Icon) order + search keywords (EN/RU/UK)
-const FOOD_ICONS: FoodIconOption[] = [
-  { emoji: '🌭', keywords: 'hot dog sausage хотдог сосиска хот-дог' },
-  { emoji: '🍇', keywords: 'grapes fruit виноград' },
-  { emoji: '🥑', keywords: 'avocado авокадо' },
-  { emoji: '🍞', keywords: 'bread loaf toast хлеб хліб' },
-  { emoji: '🍱', keywords: 'bento sushi box бенто суши суші' },
-  { emoji: '🦀', keywords: 'crab seafood краб' },
-  { emoji: '🍆', keywords: 'eggplant aubergine баклажан' },
-  { emoji: '🥐', keywords: 'croissant pastry круассан круасан' },
-  { emoji: '🦞', keywords: 'lobster seafood лобстер омар' },
-  { emoji: '🍦', keywords: 'ice cream cone мороженое морозиво' },
-  { emoji: '🥛', keywords: 'milk glass drink молоко напиток напій' },
-  { emoji: '🍉', keywords: 'watermelon fruit арбуз кавун' },
-  { emoji: '🥔', keywords: 'potato картофель картошка картопля' },
-  { emoji: '🥖', keywords: 'baguette bread багет хлеб хліб' },
-  { emoji: '🍙', keywords: 'onigiri rice ball онигири рис' },
-  { emoji: '🍤', keywords: 'shrimp prawn fried креветка' },
-  { emoji: '🍨', keywords: 'ice cream sundae dessert десерт мороженое' },
-  { emoji: '☕', keywords: 'coffee espresso latte кофе кава' },
-  { emoji: '🍊', keywords: 'orange tangerine citrus апельсин мандарин' },
-  { emoji: '🥕', keywords: 'carrot vegetable морковь морква' },
-  { emoji: '🍚', keywords: 'rice bowl рис каша' },
-  { emoji: '🍩', keywords: 'donut doughnut пончик' },
-  { emoji: '🍋', keywords: 'lemon citrus лимон' },
-  { emoji: '🌽', keywords: 'corn maize кукуруза кукурудза' },
-  { emoji: '🍪', keywords: 'cookie biscuit печенье печиво' },
-  { emoji: '🍵', keywords: 'tea green matcha чай' },
-  { emoji: '🍌', keywords: 'banana fruit банан' },
-  { emoji: '🌶️', keywords: 'chili pepper spicy перец чили перець' },
-  { emoji: '🥯', keywords: 'bagel pastry бейгл бублик' },
-  { emoji: '🍜', keywords: 'noodles ramen soup лапша рамен суп' },
-  { emoji: '🎂', keywords: 'birthday cake торт' },
-  { emoji: '🫑', keywords: 'bell pepper vegetable перец перець' },
-  { emoji: '🥞', keywords: 'pancakes breakfast блины панкейки млинці' },
-  { emoji: '🍰', keywords: 'cake slice cheesecake торт чизкейк чізкейк' },
-  { emoji: '🥭', keywords: 'mango fruit манго' },
-  { emoji: '🥒', keywords: 'cucumber pickle огурец огірок' },
-  { emoji: '🧁', keywords: 'cupcake muffin кекс капкейк маффин' },
-  { emoji: '🍷', keywords: 'wine drink вино' },
-  { emoji: '🍎', keywords: 'apple fruit яблоко яблуко' },
-  { emoji: '🥬', keywords: 'lettuce greens salad салат зелень капуста' },
-  { emoji: '🧀', keywords: 'cheese сыр сир' },
-  { emoji: '🍐', keywords: 'pear fruit груша' },
-  { emoji: '🥦', keywords: 'broccoli vegetable брокколи броколі' },
-  { emoji: '🍗', keywords: 'chicken poultry meat курица курка мясо' },
-  { emoji: '🍣', keywords: 'sushi sashimi суши суші' },
-  { emoji: '🍔', keywords: 'burger cheeseburger бургер чизбургер' },
-  { emoji: '🍕', keywords: 'pizza пицца піца' },
-  { emoji: '🥪', keywords: 'sandwich toast сэндвич бутерброд сендвіч' },
-  { emoji: '🥗', keywords: 'salad bowl салат' },
-  { emoji: '🌮', keywords: 'taco quesadilla wrap тако кесадилья' },
-];
+import { SetIconModal } from '@/components/SetIconModal';
 
 const UNIT_OPTIONS = ['gram (g)', 'ml', 'oz', 'cup', 'serving', 'piece', 'slice'];
 
@@ -98,7 +40,6 @@ export default function CreateFoodScreen() {
     : undefined;
   const isEditMode = Boolean(editingFood);
 
-  // Blank initial state in Create mode (Stage 9 Screen 2), pre-filled in Edit mode (Stage 6 Screen 4)
   const [emoji, setEmoji] = useState(editingFood?.emoji || '');
   const [foodName, setFoodName] = useState(editingFood?.name || '');
   const [serving, setServing] = useState(
@@ -117,16 +58,7 @@ export default function CreateFoodScreen() {
   const [fat, setFat] = useState(editingFood ? String(editingFood.fat) : '');
 
   const [iconPickerOpen, setIconPickerOpen] = useState(false);
-  const [iconSearch, setIconSearch] = useState('');
   const [unitPickerOpen, setUnitPickerOpen] = useState(false);
-
-  const filteredIcons = useMemo(() => {
-    const q = iconSearch.trim().toLowerCase();
-    if (!q) return FOOD_ICONS;
-    return FOOD_ICONS.filter(
-      (item) => item.keywords.toLowerCase().includes(q) || item.emoji.includes(q)
-    );
-  }, [iconSearch]);
 
   const isFormReady =
     foodName.trim().length > 0 && calories.trim().length > 0;
@@ -160,8 +92,7 @@ export default function CreateFoodScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
-      {/* Top Navbar: X on left, centered Create Food / Edit Food title */}
-      <View style={styles.navbar}>
+      <View style={[styles.navbar, { backgroundColor: theme.background }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
           <Ionicons name="close" size={28} color={theme.text} />
         </TouchableOpacity>
@@ -171,18 +102,17 @@ export default function CreateFoodScreen() {
         <View style={{ width: 28 }} />
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent}>
-        {/* Centered Circular Icon Badge: '+' when empty (Screen 2), selected emoji when set (Screen 3) */}
+      <ScrollView
+        style={{ flex: 1, overflow: 'hidden' }}
+        contentContainerStyle={styles.scrollContent}
+      >
         <View style={styles.avatarContainer}>
           <TouchableOpacity
             style={[
               styles.avatarCircle,
               { borderColor: theme.inputBorder, backgroundColor: theme.background },
             ]}
-            onPress={() => {
-              setIconSearch('');
-              setIconPickerOpen(true);
-            }}
+            onPress={() => setIconPickerOpen(true)}
             activeOpacity={0.8}
             accessibilityRole="button"
             accessibilityLabel={t.setIcon}
@@ -197,7 +127,6 @@ export default function CreateFoodScreen() {
 
         <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
-        {/* Food Name Input */}
         <View style={styles.fieldFull}>
           <Text style={[styles.label, { color: theme.text }]}>{t.foodName}</Text>
           <TextInput
@@ -209,7 +138,6 @@ export default function CreateFoodScreen() {
           />
         </View>
 
-        {/* Row 1: Serving & Unit */}
         <View style={styles.row2Col}>
           <View style={styles.colHalf}>
             <Text style={[styles.label, { color: theme.text }]}>{t.serving}</Text>
@@ -242,7 +170,6 @@ export default function CreateFoodScreen() {
           </View>
         </View>
 
-        {/* Row 2: Calorie (kcal) & Carbs (g) */}
         <View style={styles.row2Col}>
           <View style={styles.colHalf}>
             <Text style={[styles.label, { color: theme.text }]}>{t.caloriesKcal}</Text>
@@ -268,7 +195,6 @@ export default function CreateFoodScreen() {
           </View>
         </View>
 
-        {/* Row 3: Protein (g) & Fat (g) */}
         <View style={styles.row2Col}>
           <View style={styles.colHalf}>
             <Text style={[styles.label, { color: theme.text }]}>{t.proteinG}</Text>
@@ -295,7 +221,6 @@ export default function CreateFoodScreen() {
         </View>
       </ScrollView>
 
-      {/* Bottom Sticky Pill CTA: muted olive when empty (Screen 2), bright lime when filled (Screen 3) */}
       <View
         style={[
           styles.bottomBar,
@@ -303,10 +228,7 @@ export default function CreateFoodScreen() {
         ]}
       >
         <TouchableOpacity
-          style={[
-            styles.addBtn,
-            !isFormReady && styles.addBtnDisabled,
-          ]}
+          style={[styles.addBtn, !isFormReady && styles.addBtnDisabled]}
           onPress={handleSave}
           disabled={!isFormReady}
           activeOpacity={0.85}
@@ -318,85 +240,13 @@ export default function CreateFoodScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Tall Searchable "Set Icon" Bottom Sheet matching Stage 9 Screen 1 */}
-      <Modal
+      <SetIconModal
         visible={iconPickerOpen}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setIconPickerOpen(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <TouchableOpacity
-            style={styles.backdropDismissArea}
-            activeOpacity={1}
-            onPress={() => setIconPickerOpen(false)}
-          />
-          <View
-            style={[
-              styles.setIconSheet,
-              { backgroundColor: theme.background, borderColor: theme.divider },
-            ]}
-          >
-            <View style={[styles.sheetHandle, { backgroundColor: theme.inputBorder }]} />
-            <Text style={[styles.setIconTitle, { color: theme.text }]}>
-              {t.setIcon}
-            </Text>
-            <View style={[styles.sheetDivider, { backgroundColor: theme.divider }]} />
+        selectedEmoji={emoji}
+        onSelect={setEmoji}
+        onClose={() => setIconPickerOpen(false)}
+      />
 
-            {/* Search Bar */}
-            <View style={[styles.iconSearchBox, { backgroundColor: theme.card }]}>
-              <Ionicons name="search-outline" size={20} color={theme.textMuted} />
-              <TextInput
-                style={[styles.iconSearchInput, { color: theme.text }]}
-                value={iconSearch}
-                onChangeText={setIconSearch}
-                placeholder={t.search}
-                placeholderTextColor={theme.textMuted}
-              />
-              {iconSearch.length > 0 && (
-                <TouchableOpacity onPress={() => setIconSearch('')}>
-                  <Ionicons name="close-circle" size={18} color={theme.textMuted} />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* 5-Column Scrollable Food Icon Grid */}
-            <ScrollView
-              style={{ flex: 1 }}
-              contentContainerStyle={styles.iconGridContent}
-              showsVerticalScrollIndicator={false}
-            >
-              <View style={styles.iconGrid}>
-                {filteredIcons.map((item) => {
-                  const selected = emoji === item.emoji;
-                  return (
-                    <TouchableOpacity
-                      key={item.emoji}
-                      style={[
-                        styles.iconGridCell,
-                        selected && {
-                          backgroundColor: theme.card,
-                          borderColor: COLORS.primary,
-                          borderWidth: 1.5,
-                        },
-                      ]}
-                      onPress={() => {
-                        setEmoji(item.emoji);
-                        setIconPickerOpen(false);
-                      }}
-                      activeOpacity={0.75}
-                    >
-                      <Text style={styles.iconGridEmoji}>{item.emoji}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Unit Picker Sheet */}
       <Modal
         visible={unitPickerOpen}
         transparent
@@ -453,6 +303,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 52,
     paddingBottom: 14,
+    zIndex: 5,
   },
   iconBtn: {
     width: 28,
@@ -548,66 +399,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.68)',
     justifyContent: 'flex-end',
     alignItems: 'center',
-  },
-  backdropDismissArea: {
-    flex: 1,
-    width: '100%',
-  },
-  setIconSheet: {
-    width: '100%',
-    maxWidth: 440,
-    height: '86%',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderTopWidth: 1,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 24,
-  },
-  setIconTitle: {
-    fontSize: 21,
-    fontWeight: '800',
-    textAlign: 'center',
-    marginTop: 4,
-    marginBottom: 14,
-  },
-  sheetDivider: {
-    height: 1,
-    width: '100%',
-    marginBottom: 18,
-  },
-  iconSearchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    height: 52,
-    gap: 10,
-    marginBottom: 18,
-  },
-  iconSearchInput: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  iconGridContent: {
-    paddingBottom: 28,
-  },
-  iconGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'flex-start',
-  },
-  iconGridCell: {
-    width: '20%',
-    aspectRatio: 1,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  iconGridEmoji: {
-    fontSize: 36,
   },
   sheetCard: {
     width: '100%',

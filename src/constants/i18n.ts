@@ -126,6 +126,8 @@ export interface TranslationStrings {
   foodNamePlaceholder: string;
   unitPlaceholder: string;
   example100: string;
+  example200: string;
+  scanBarcode: string;
   personalFoodDeletedToast: string;
   removeTitle: string;
   removeFavoriteConfirm: string;
@@ -360,6 +362,8 @@ const en: TranslationStrings = {
   foodNamePlaceholder: 'e.g. Salad, Sandwich, etc',
   unitPlaceholder: 'e.g. gram, ml',
   example100: 'e.g. 100',
+  example200: 'e.g. 200',
+  scanBarcode: 'Scan Barcode',
   personalFoodDeletedToast: 'Personal food deleted!',
   removeTitle: 'Remove',
   removeFavoriteConfirm: 'Sure you want to remove this food from favorites?',
@@ -588,6 +592,8 @@ const ru: TranslationStrings = {
   foodNamePlaceholder: 'напр. Салат, Сэндвич и т.д.',
   unitPlaceholder: 'напр. грамм, мл',
   example100: 'напр. 100',
+  example200: 'напр. 200',
+  scanBarcode: 'Сканер штрихкода',
   personalFoodDeletedToast: 'Личное блюдо удалено!',
   removeTitle: 'Удалить',
   removeFavoriteConfirm: 'Удалить это блюдо из избранного?',
@@ -816,6 +822,8 @@ const uk: TranslationStrings = {
   foodNamePlaceholder: 'напр. Салат, Сендвіч тощо',
   unitPlaceholder: 'напр. грам, мл',
   example100: 'напр. 100',
+  example200: 'напр. 200',
+  scanBarcode: 'Сканер штрихкоду',
   personalFoodDeletedToast: 'Особисту страву видалено!',
   removeTitle: 'Видалити',
   removeFavoriteConfirm: 'Видалити цю страву з обраного?',
