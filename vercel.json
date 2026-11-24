@@ -1,0 +1,13 @@
+{
+  "buildCommand": "npx expo export -p web",
+  "outputDirectory": "dist",
+  "devCommand": "npx expo start --web",
+  "cleanUrls": true,
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/((?!api/|_expo/|assets/|manifest\\.json|sw\\.js|favicon\\.ico).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "Nutrio — Calorie Counter & AI Food Tracker",
+  "short_name": "Nutrio",
+  "description": "Mobile-first Calorie Counter, Gemini AI Food Recognition, Goal Setting, and Weight Calendar PWA.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFFFFF",
+  "theme_color": "#A1CE50",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}
