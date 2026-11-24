@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,11 @@ import { useNutrio, MealType, FoodItem } from '@/context/NutrioContext';
 const MEALS: MealType[] = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
 
 export default function AddFoodIntakeScreen() {
-  const { meal, tab } = useLocalSearchParams<{ meal?: string; tab?: string }>();
+  const { meal, tab, removedFav } = useLocalSearchParams<{
+    meal?: string;
+    tab?: string;
+    removedFav?: string;
+  }>();
   const {
     themeMode,
     t,
@@ -44,6 +48,15 @@ export default function AddFoodIntakeScreen() {
   const [activeTab, setActiveTab] = useState<'Recent' | 'Favorites' | 'Personal'>(
     tab === 'Favorites' || tab === 'Personal' ? tab : 'Recent'
   );
+  const [bottomToast, setBottomToast] = useState<string | null>(
+    removedFav === '1' ? t.removedFromFavoritesToast : null
+  );
+
+  useEffect(() => {
+    if (!bottomToast) return;
+    const timer = setTimeout(() => setBottomToast(null), 2600);
+    return () => clearTimeout(timer);
+  }, [bottomToast]);
 
   // Multi-select basket matching Stage 4 Screens 31_Dark, 32_Dark, 33_Dark
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -296,7 +309,11 @@ export default function AddFoodIntakeScreen() {
                       onPress={() =>
                         router.push({
                           pathname: '/food/[id]',
-                          params: { id: food.id, meal: selectedMeal },
+                          params: {
+                            id: food.id,
+                            meal: selectedMeal,
+                            fromTab: activeTab,
+                          },
                         })
                       }
                     >
@@ -325,6 +342,25 @@ export default function AddFoodIntakeScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* Bottom Floating Toast matching Stage 7 Screen 2 ("Removed from favorites!") */}
+      {bottomToast && (
+        <View style={styles.bottomToastOverlay} pointerEvents="none">
+          <View
+            style={[
+              styles.bottomToastCard,
+              { backgroundColor: theme.card, borderColor: theme.inputBorder },
+            ]}
+          >
+            <View style={styles.toastCheckCircle}>
+              <Ionicons name="checkmark" size={16} color="#181A20" />
+            </View>
+            <Text style={[styles.toastText, { color: theme.text }]}>
+              {bottomToast}
+            </Text>
+          </View>
+        </View>
+      )}
 
       {/* Sticky Multi-Select Footer matching Stage 4 Screens 31_Dark & 32_Dark */}
       {selectedFoods.length > 0 && (
@@ -654,6 +690,39 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
     borderTopWidth: 1,
     gap: 20,
+  },
+  bottomToastOverlay: {
+    position: 'absolute',
+    bottom: 84,
+    left: 0,
+    right: 0,
+    zIndex: 35,
+    alignItems: 'center',
+  },
+  bottomToastCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
+    elevation: 8,
+  },
+  toastCheckCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toastText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   basketKcalCol: {
     minWidth: 66,

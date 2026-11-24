@@ -22,10 +22,11 @@ import { MacroDonutChart } from '@/components/CircularProgress';
  * - Stage 6 Personal Food Details (Edit pencil + Heart + Red trash, compact macro card, Delete Personal Food modal)
  */
 export default function FoodDetailsScreen() {
-  const { id, meal, entryId } = useLocalSearchParams<{
+  const { id, meal, entryId, fromTab } = useLocalSearchParams<{
     id: string;
     meal?: string;
     entryId?: string;
+    fromTab?: string;
   }>();
   const {
     themeMode,
@@ -59,6 +60,7 @@ export default function FoodDetailsScreen() {
   const [servings, setServings] = useState(existingEntry?.servings || 1);
   const [favoriteToast, setFavoriteToast] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [removeFavModalOpen, setRemoveFavModalOpen] = useState(false);
   const [weightModalOpen, setWeightModalOpen] = useState(false);
   const [customWeightDraft, setCustomWeightDraft] = useState(
     String(Math.round(food.servingGrams * (existingEntry?.servings || 1)))
@@ -87,11 +89,31 @@ export default function FoodDetailsScreen() {
   const fatPct = Math.max(0, Math.round((100 - carbsPct - proteinPct) * 10) / 10);
 
   const handleToggleFavorite = async () => {
-    const nextIsFav = !isFavorite;
+    if (isFavorite) {
+      // Stage 7 Screen 4: Confirm before removing from favorites
+      setRemoveFavModalOpen(true);
+      return;
+    }
     await toggleFavoriteFood(food.id);
-    setFavoriteToast(
-      nextIsFav ? t.addedToFavoritesToast : t.removedFromFavoritesToast
-    );
+    setFavoriteToast(t.addedToFavoritesToast);
+    setTimeout(() => setFavoriteToast(null), 2400);
+  };
+
+  const handleConfirmRemoveFavorite = async () => {
+    setRemoveFavModalOpen(false);
+    await toggleFavoriteFood(food.id);
+    if (fromTab === 'Favorites') {
+      router.replace({
+        pathname: '/food/add',
+        params: {
+          meal: meal || 'Dinner',
+          tab: 'Favorites',
+          removedFav: '1',
+        },
+      });
+      return;
+    }
+    setFavoriteToast(t.removedFromFavoritesToast);
     setTimeout(() => setFavoriteToast(null), 2400);
   };
 
@@ -419,6 +441,45 @@ export default function FoodDetailsScreen() {
         </View>
       </Modal>
 
+      {/* Remove from Favorites Confirmation Bottom Sheet matching Stage 7 Screen 4 */}
+      <Modal
+        visible={removeFavModalOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setRemoveFavModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: theme.card }]}>
+            <View style={[styles.sheetHandle, { backgroundColor: theme.inputBorder }]} />
+            <Text style={[styles.removeSheetTitle, { color: theme.text }]}>
+              {t.removeTitle}
+            </Text>
+            <View style={[styles.divider, { backgroundColor: theme.divider }]} />
+            <Text style={[styles.confirmQuestion, { color: theme.text }]}>
+              {t.removeFavoriteConfirm}
+            </Text>
+            <Text style={[styles.confirmSub, { color: theme.textSecondary }]}>
+              {t.canAddBackLater}
+            </Text>
+            <View style={[styles.divider, { backgroundColor: theme.divider }]} />
+            <View style={styles.modalBtnRow}>
+              <TouchableOpacity
+                style={[styles.cancelPillBtn, { backgroundColor: theme.secondaryBtnBg }]}
+                onPress={() => setRemoveFavModalOpen(false)}
+              >
+                <Text style={{ fontWeight: '700', color: theme.text }}>{t.cancel}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.confirmBtn}
+                onPress={handleConfirmRemoveFavorite}
+              >
+                <Text style={{ fontWeight: '800', color: '#181A20' }}>{t.yesRemove}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Delete Confirmation Modal (Logged Entry OR Personal Food matching Stage 6 Screen 5) */}
       <Modal
         visible={deleteModalOpen}
@@ -682,6 +743,11 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     color: '#F55A5A',
+    textAlign: 'center',
+  },
+  removeSheetTitle: {
+    fontSize: 22,
+    fontWeight: '800',
     textAlign: 'center',
   },
   confirmQuestion: {

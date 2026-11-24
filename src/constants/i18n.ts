@@ -122,6 +122,10 @@ export interface TranslationStrings {
   deletePersonalFoodConfirm: string;
   editFood: string;
   personalFoodDeletedToast: string;
+  removeTitle: string;
+  removeFavoriteConfirm: string;
+  canAddBackLater: string;
+  yesRemove: string;
   cannotBeUndone: string;
   yesDelete: string;
   foodLogDeletedToast: string;
@@ -347,11 +351,15 @@ const en: TranslationStrings = {
   deletePersonalFoodConfirm: 'Sure you want to delete this personal food?',
   editFood: 'Edit Food',
   personalFoodDeletedToast: 'Personal food deleted!',
+  removeTitle: 'Remove',
+  removeFavoriteConfirm: 'Sure you want to remove this food from favorites?',
+  canAddBackLater: 'You can always add it back later.',
+  yesRemove: 'Yes, Remove',
   cannotBeUndone: 'This action cannot be undone.',
   yesDelete: 'Yes, Delete',
   foodLogDeletedToast: 'Food log successfully deleted!',
   addedToFavoritesToast: 'Added to Favorites!',
-  removedFromFavoritesToast: 'Removed from Favorites!',
+  removedFromFavoritesToast: 'Removed from favorites!',
   noItemsLoggedYet: 'No items logged yet.',
   tapToDeleteHint: 'Tip: Tap any logged item to reveal the delete button',
   weightLabel: 'Weight',
@@ -566,6 +574,10 @@ const ru: TranslationStrings = {
   deletePersonalFoodConfirm: 'Вы уверены, что хотите удалить это личное блюдо?',
   editFood: 'Редактировать блюдо',
   personalFoodDeletedToast: 'Личное блюдо удалено!',
+  removeTitle: 'Удалить',
+  removeFavoriteConfirm: 'Удалить это блюдо из избранного?',
+  canAddBackLater: 'Вы всегда сможете добавить его снова позже.',
+  yesRemove: 'Да, удалить',
   cannotBeUndone: 'Это действие нельзя отменить.',
   yesDelete: 'Да, удалить',
   foodLogDeletedToast: 'Запись успешно удалена!',
@@ -785,6 +797,10 @@ const uk: TranslationStrings = {
   deletePersonalFoodConfirm: 'Ви впевнені, що хочете видалити цю особисту страву?',
   editFood: 'Редагувати страву',
   personalFoodDeletedToast: 'Особисту страву видалено!',
+  removeTitle: 'Видалити',
+  removeFavoriteConfirm: 'Видалити цю страву з обраного?',
+  canAddBackLater: 'Ви завжди зможете додати її знову пізніше.',
+  yesRemove: 'Так, видалити',
   cannotBeUndone: 'Цю дію неможливо скасувати.',
   yesDelete: 'Так, видалити',
   foodLogDeletedToast: 'Запис успішно видалено!',
