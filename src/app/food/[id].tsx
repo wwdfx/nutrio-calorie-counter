@@ -15,10 +15,11 @@ import { useNutrio, MealType } from '@/context/NutrioContext';
 import { MacroDonutChart } from '@/components/CircularProgress';
 
 /**
- * Reworked Stage 5 Food Details screen matching:
+ * Reworked Stage 5 & Stage 6 Food Details screen matching:
  * - 39_Dark_food details (Add mode with heart outline + `+ Add`)
  * - 40_Dark_food details - add to favorites (red filled heart + top floating `"Added to Favorites!"` toast)
  * - 41_Dark_food details (Edit mode from logged history: heart + red trash icon + `"Save"` CTA)
+ * - Stage 6 Personal Food Details (Edit pencil + Heart + Red trash, compact macro card, Delete Personal Food modal)
  */
 export default function FoodDetailsScreen() {
   const { id, meal, entryId } = useLocalSearchParams<{
@@ -34,6 +35,7 @@ export default function FoodDetailsScreen() {
     addFoodIntake,
     updateFoodIntake,
     removeFoodIntake,
+    deleteCustomFood,
     toggleFavoriteFood,
   } = useNutrio();
   const theme = getThemeColors(themeMode);
@@ -44,10 +46,15 @@ export default function FoodDetailsScreen() {
   const catalogMatch = catalogFoods.find(
     (f) => f.id === (existingEntry?.food.id || id)
   );
-  const food = existingEntry?.food || catalogMatch || catalogFoods[0];
+  // Always read latest catalog edits when viewing/editing a personal food
+  const food =
+    (existingEntry ? { ...existingEntry.food, ...catalogMatch } : catalogMatch) ||
+    catalogFoods[0];
   const isFavorite = catalogMatch?.isFavorite ?? Boolean(food.isFavorite);
 
   const isEditMode = Boolean(existingEntry);
+  const isPersonalView = Boolean(food.isPersonal && !isEditMode);
+  const showMicronutrients = !isPersonalView;
 
   const [servings, setServings] = useState(existingEntry?.servings || 1);
   const [favoriteToast, setFavoriteToast] = useState<string | null>(null);
@@ -58,9 +65,19 @@ export default function FoodDetailsScreen() {
   );
 
   const totalCals = Math.round(food.calories * servings);
+  const totalCarbsG = Math.round(food.carbs * servings * 10) / 10;
+  const totalProteinG = Math.round(food.protein * servings * 10) / 10;
+  const totalFatG = Math.round(food.fat * servings * 10) / 10;
   const totalGrams = Math.round(food.servingGrams * servings);
 
-  // Macro kcal breakdown matching Stage 5 screens (Carbs 4 kcal/g, Protein 4 kcal/g, Fat 9 kcal/g)
+  const shortUnit =
+    food.unit === 'ml'
+      ? 'ml'
+      : food.unit === 'gram (g)' || food.unit === 'gram'
+      ? 'g'
+      : food.unit;
+
+  // Macro kcal breakdown & percentages (Carbs 4 kcal/g, Protein 4 kcal/g, Fat 9 kcal/g)
   const carbsKcal = Math.round(food.carbs * servings * 4 * 10) / 10;
   const proteinKcal = Math.round(food.protein * servings * 4 * 10) / 10;
   const fatKcal = Math.round(food.fat * servings * 9 * 10) / 10;
@@ -90,11 +107,19 @@ export default function FoodDetailsScreen() {
   };
 
   const handleConfirmDelete = async () => {
-    if (existingEntry) {
+    if (isEditMode && existingEntry) {
       await removeFoodIntake(existingEntry.id);
+      setDeleteModalOpen(false);
+      router.back();
+      return;
+    }
+    if (isPersonalView) {
+      await deleteCustomFood(food.id);
+      setDeleteModalOpen(false);
+      router.back();
+      return;
     }
     setDeleteModalOpen(false);
-    router.back();
   };
 
   const handleApplyWeight = () => {
@@ -119,13 +144,27 @@ export default function FoodDetailsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
-      {/* Top Navbar: Close on left, Heart (+ Trash in Edit mode) on right */}
+      {/* Top Navbar: Close on left; Edit Pencil (Personal), Heart, & Red Trash (Edit/Personal) on right */}
       <View style={styles.navbar}>
         <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
           <Ionicons name="close" size={28} color={theme.text} />
         </TouchableOpacity>
 
         <View style={styles.navRightGroup}>
+          {isPersonalView && (
+            <TouchableOpacity
+              onPress={() =>
+                router.push({
+                  pathname: '/food/create',
+                  params: { editId: food.id, meal: meal || 'Dinner' },
+                })
+              }
+              style={styles.iconBtn}
+              accessibilityLabel={t.editFood}
+            >
+              <Ionicons name="pencil-outline" size={24} color={theme.text} />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity onPress={handleToggleFavorite} style={styles.iconBtn}>
             <Ionicons
               name={isFavorite ? 'heart' : 'heart-outline'}
@@ -133,10 +172,11 @@ export default function FoodDetailsScreen() {
               color={isFavorite ? '#F54336' : theme.text}
             />
           </TouchableOpacity>
-          {isEditMode && (
+          {(isEditMode || isPersonalView) && (
             <TouchableOpacity
               onPress={() => setDeleteModalOpen(true)}
               style={styles.iconBtn}
+              accessibilityLabel={t.deleteTitle}
             >
               <Ionicons name="trash-outline" size={25} color="#F55A5A" />
             </TouchableOpacity>
@@ -144,7 +184,7 @@ export default function FoodDetailsScreen() {
         </View>
       </View>
 
-      {/* Top Floating Favorites Toast matching Screen 40_Dark */}
+      {/* Top Floating Favorites Toast matching Screen 40_Dark & Stage 6 */}
       {favoriteToast && (
         <View style={styles.topToastOverlay} pointerEvents="none">
           <View
@@ -175,7 +215,7 @@ export default function FoodDetailsScreen() {
 
           <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
-          {/* Macro Donut + Breakdown Row matching 39_Dark / 41_Dark */}
+          {/* Macro Donut + Breakdown Row matching Stage 5 & Stage 6 Personal */}
           <View style={styles.macroSummaryRow}>
             <MacroDonutChart
               size={116}
@@ -201,7 +241,7 @@ export default function FoodDetailsScreen() {
                   {t.carbs}
                 </Text>
                 <Text style={[styles.macroLineVal, { color: theme.text }]}>
-                  {carbsKcal} ({carbsPct.toFixed(1)}%)
+                  {isPersonalView ? totalCarbsG : carbsKcal} ({carbsPct.toFixed(1)}%)
                 </Text>
               </View>
 
@@ -211,7 +251,7 @@ export default function FoodDetailsScreen() {
                   {t.protein}
                 </Text>
                 <Text style={[styles.macroLineVal, { color: theme.text }]}>
-                  {proteinKcal} ({proteinPct.toFixed(1)}%)
+                  {isPersonalView ? totalProteinG : proteinKcal} ({proteinPct.toFixed(1)}%)
                 </Text>
               </View>
 
@@ -221,65 +261,69 @@ export default function FoodDetailsScreen() {
                   {t.fat}
                 </Text>
                 <Text style={[styles.macroLineVal, { color: theme.text }]}>
-                  {fatKcal} ({fatPct.toFixed(1)}%)
+                  {isPersonalView ? totalFatG : fatKcal} ({fatPct.toFixed(1)}%)
                 </Text>
               </View>
             </View>
           </View>
 
-          <View style={[styles.divider, { backgroundColor: theme.divider }]} />
+          {showMicronutrients && (
+            <>
+              <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
-          {/* Micronutrients & Minerals matching Stage 5 */}
-          <View style={styles.microSection}>
-            <View style={styles.microRow}>
-              <Text style={[styles.microLabel, { color: theme.textSecondary }]}>
-                {t.cholesterol}
-              </Text>
-              <Text style={[styles.microValue, { color: theme.text }]}>
-                {cholMg} mg ({cholDv}%)
-              </Text>
-            </View>
-            <View style={styles.microRow}>
-              <Text style={[styles.microLabel, { color: theme.textSecondary }]}>
-                {t.sodium}
-              </Text>
-              <Text style={[styles.microValue, { color: theme.text }]}>
-                {sodMg} mg ({sodDv}%)
-              </Text>
-            </View>
+              {/* Micronutrients & Minerals matching Stage 5 */}
+              <View style={styles.microSection}>
+                <View style={styles.microRow}>
+                  <Text style={[styles.microLabel, { color: theme.textSecondary }]}>
+                    {t.cholesterol}
+                  </Text>
+                  <Text style={[styles.microValue, { color: theme.text }]}>
+                    {cholMg} mg ({cholDv}%)
+                  </Text>
+                </View>
+                <View style={styles.microRow}>
+                  <Text style={[styles.microLabel, { color: theme.textSecondary }]}>
+                    {t.sodium}
+                  </Text>
+                  <Text style={[styles.microValue, { color: theme.text }]}>
+                    {sodMg} mg ({sodDv}%)
+                  </Text>
+                </View>
 
-            <View style={styles.mineralsHeader}>
-              <Text style={{ fontSize: 13, color: theme.textMuted, fontWeight: '600' }}>
-                {t.minerals}
-              </Text>
-              <View style={[styles.flexLine, { backgroundColor: theme.divider }]} />
-            </View>
+                <View style={styles.mineralsHeader}>
+                  <Text style={{ fontSize: 13, color: theme.textMuted, fontWeight: '600' }}>
+                    {t.minerals}
+                  </Text>
+                  <View style={[styles.flexLine, { backgroundColor: theme.divider }]} />
+                </View>
 
-            <View style={styles.microRow}>
-              <Text style={[styles.microLabel, { color: theme.textSecondary }]}>
-                {t.calcium}
-              </Text>
-              <Text style={[styles.microValue, { color: theme.text }]}>
-                {calcMg} mg ({calcDv}%)
-              </Text>
-            </View>
-            <View style={styles.microRow}>
-              <Text style={[styles.microLabel, { color: theme.textSecondary }]}>
-                {t.iron}
-              </Text>
-              <Text style={[styles.microValue, { color: theme.text }]}>
-                {ironMg} mg ({ironDv}%)
-              </Text>
-            </View>
-            <View style={styles.microRow}>
-              <Text style={[styles.microLabel, { color: theme.textSecondary }]}>
-                {t.potassium}
-              </Text>
-              <Text style={[styles.microValue, { color: theme.text }]}>
-                {potMg} mg ({potDv}%)
-              </Text>
-            </View>
-          </View>
+                <View style={styles.microRow}>
+                  <Text style={[styles.microLabel, { color: theme.textSecondary }]}>
+                    {t.calcium}
+                  </Text>
+                  <Text style={[styles.microValue, { color: theme.text }]}>
+                    {calcMg} mg ({calcDv}%)
+                  </Text>
+                </View>
+                <View style={styles.microRow}>
+                  <Text style={[styles.microLabel, { color: theme.textSecondary }]}>
+                    {t.iron}
+                  </Text>
+                  <Text style={[styles.microValue, { color: theme.text }]}>
+                    {ironMg} mg ({ironDv}%)
+                  </Text>
+                </View>
+                <View style={styles.microRow}>
+                  <Text style={[styles.microLabel, { color: theme.textSecondary }]}>
+                    {t.potassium}
+                  </Text>
+                  <Text style={[styles.microValue, { color: theme.text }]}>
+                    {potMg} mg ({potDv}%)
+                  </Text>
+                </View>
+              </View>
+            </>
+          )}
         </View>
       </ScrollView>
 
@@ -303,9 +347,11 @@ export default function FoodDetailsScreen() {
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 }}>
               <Text style={[styles.weightGramsText, { color: theme.text }]}>
-                {totalGrams} g
+                {totalGrams} {shortUnit}
               </Text>
-              <Ionicons name="pencil-outline" size={18} color={theme.textSecondary} />
+              {!isPersonalView && (
+                <Ionicons name="pencil-outline" size={18} color={theme.textSecondary} />
+              )}
             </View>
           </TouchableOpacity>
 
@@ -345,8 +391,9 @@ export default function FoodDetailsScreen() {
       >
         <View style={styles.modalBackdrop}>
           <View style={[styles.modalCard, { backgroundColor: theme.card }]}>
+            <View style={[styles.sheetHandle, { backgroundColor: theme.inputBorder }]} />
             <Text style={[styles.modalTitle, { color: theme.text }]}>
-              {t.servingWeight} (g)
+              {t.servingWeight} ({shortUnit})
             </Text>
             <TextInput
               style={[
@@ -372,7 +419,7 @@ export default function FoodDetailsScreen() {
         </View>
       </Modal>
 
-      {/* Delete Logged Entry Confirmation Modal */}
+      {/* Delete Confirmation Modal (Logged Entry OR Personal Food matching Stage 6 Screen 5) */}
       <Modal
         visible={deleteModalOpen}
         transparent
@@ -381,14 +428,16 @@ export default function FoodDetailsScreen() {
       >
         <View style={styles.modalBackdrop}>
           <View style={[styles.modalCard, { backgroundColor: theme.card }]}>
+            <View style={[styles.sheetHandle, { backgroundColor: theme.inputBorder }]} />
             <Text style={styles.deleteTitle}>{t.deleteTitle}</Text>
             <View style={[styles.divider, { backgroundColor: theme.divider }]} />
             <Text style={[styles.confirmQuestion, { color: theme.text }]}>
-              {t.deleteFoodConfirm}
+              {isPersonalView ? t.deletePersonalFoodConfirm : t.deleteFoodConfirm}
             </Text>
             <Text style={[styles.confirmSub, { color: theme.textSecondary }]}>
               {t.cannotBeUndone}
             </Text>
+            <View style={[styles.divider, { backgroundColor: theme.divider }]} />
             <View style={styles.modalBtnRow}>
               <TouchableOpacity
                 style={[styles.cancelPillBtn, { backgroundColor: theme.secondaryBtnBg }]}
@@ -595,7 +644,7 @@ const styles = StyleSheet.create({
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.68)',
     justifyContent: 'flex-end',
     alignItems: 'center',
   },
@@ -604,8 +653,16 @@ const styles = StyleSheet.create({
     maxWidth: 440,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingTop: 12,
     paddingBottom: 32,
+  },
+  sheetHandle: {
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 16,
   },
   modalTitle: {
     fontSize: 20,
@@ -628,15 +685,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   confirmQuestion: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '800',
     textAlign: 'center',
-    marginBottom: 8,
+    lineHeight: 26,
+    marginBottom: 10,
   },
   confirmSub: {
     fontSize: 14,
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 4,
   },
   modalBtnRow: {
     flexDirection: 'row',

@@ -116,6 +116,8 @@ interface NutrioContextValue {
   updateFoodIntake: (entryId: string, servings: number, customGrams?: number) => Promise<void>;
   removeFoodIntake: (entryId: string) => Promise<void>;
   createCustomFood: (food: Omit<FoodItem, 'id'>) => Promise<FoodItem>;
+  updateCustomFood: (foodId: string, updates: Partial<Omit<FoodItem, 'id'>>) => Promise<void>;
+  deleteCustomFood: (foodId: string) => Promise<void>;
   toggleFavoriteFood: (foodId: string) => Promise<void>;
   addActivityLog: (activity: Omit<LoggedActivityEntry, 'id' | 'date'>, date?: string) => Promise<void>;
   removeActivityLog: (id: string) => Promise<void>;
@@ -460,11 +462,78 @@ const DEFAULT_FOOD_CATALOG: FoodItem[] = [
     carbs: 2,
     protein: 5,
     fat: 13,
-    cholesterolMg: 28,
-    sodiumMg: 480,
-    calciumMg: 15,
-    ironMg: 0.9,
-    potassiumMg: 95,
+    isPersonal: true,
+  },
+  {
+    id: 'food-orange-juice',
+    name: 'Orange Juice',
+    emoji: '🍊',
+    servingGrams: 240,
+    unit: 'ml',
+    calories: 112,
+    carbs: 26,
+    protein: 2,
+    fat: 0,
+    isPersonal: true,
+  },
+  {
+    id: 'food-avocado-toast',
+    name: 'Avocado Toast',
+    emoji: '🥑',
+    servingGrams: 140,
+    unit: 'gram (g)',
+    calories: 250,
+    carbs: 24,
+    protein: 7,
+    fat: 14,
+    isPersonal: true,
+  },
+  {
+    id: 'food-turkey-sandwich',
+    name: 'Turkey Sandwich',
+    emoji: '🥪',
+    servingGrams: 200,
+    unit: 'gram (g)',
+    calories: 280,
+    carbs: 30,
+    protein: 22,
+    fat: 8,
+    isPersonal: true,
+  },
+  {
+    id: 'food-fruit-salad',
+    name: 'Fruit Salad',
+    emoji: '🍓',
+    servingGrams: 150,
+    unit: 'gram (g)',
+    calories: 120,
+    carbs: 28,
+    protein: 2,
+    fat: 0.5,
+    isPersonal: true,
+  },
+  {
+    id: 'food-veggie-wrap',
+    name: 'Veggie Wrap',
+    emoji: '🌯',
+    servingGrams: 250,
+    unit: 'gram (g)',
+    calories: 290,
+    carbs: 38,
+    protein: 10,
+    fat: 11,
+    isPersonal: true,
+  },
+  {
+    id: 'food-cheesecake-slice',
+    name: 'Cheesecake Slice',
+    emoji: '🍰',
+    servingGrams: 120,
+    unit: 'gram (g)',
+    calories: 320,
+    carbs: 26,
+    protein: 6,
+    fat: 22,
     isPersonal: true,
   },
   {
@@ -631,6 +700,7 @@ export function NutrioProvider({ children }: { children: React.ReactNode }) {
 
   const seed = buildInitialSeedData();
   const [catalogFoods, setCatalogFoods] = useState<FoodItem[]>(DEFAULT_FOOD_CATALOG);
+  const [deletedCatalogIds, setDeletedCatalogIds] = useState<string[]>([]);
   const [loggedFoods, setLoggedFoods] = useState<LoggedFoodEntry[]>(seed.loggedFoods);
   const [loggedActivities, setLoggedActivities] = useState<LoggedActivityEntry[]>(seed.loggedActivities);
   const [waterByDate, setWaterByDate] = useState<Record<string, number>>(seed.waterByDate);
@@ -651,12 +721,18 @@ export function NutrioProvider({ children }: { children: React.ReactNode }) {
           if (parsed.accounts) setAccounts(parsed.accounts);
           if (parsed.geminiApiKey) setGeminiApiKeyState(parsed.geminiApiKey);
           if (parsed.geminiModel) setGeminiModelState(parsed.geminiModel);
+          const deletedIds: string[] = Array.isArray(parsed.deletedCatalogIds)
+            ? parsed.deletedCatalogIds
+            : [];
+          if (deletedIds.length > 0) setDeletedCatalogIds(deletedIds);
           if (parsed.catalogFoods) {
             const savedList = parsed.catalogFoods as FoodItem[];
             const mergedCatalog = [
               ...savedList,
               ...DEFAULT_FOOD_CATALOG.filter(
-                (def) => !savedList.some((s) => s.id === def.id)
+                (def) =>
+                  !savedList.some((s) => s.id === def.id) &&
+                  !deletedIds.includes(def.id)
               ),
             ];
             setCatalogFoods(mergedCatalog);
@@ -683,6 +759,7 @@ export function NutrioProvider({ children }: { children: React.ReactNode }) {
     geminiApiKey: string;
     geminiModel: GeminiVisionModel;
     catalogFoods: FoodItem[];
+    deletedCatalogIds: string[];
     loggedFoods: LoggedFoodEntry[];
     loggedActivities: LoggedActivityEntry[];
     waterByDate: Record<string, number>;
@@ -698,6 +775,7 @@ export function NutrioProvider({ children }: { children: React.ReactNode }) {
         geminiApiKey: next.geminiApiKey ?? geminiApiKey,
         geminiModel: next.geminiModel ?? geminiModel,
         catalogFoods: next.catalogFoods ?? catalogFoods,
+        deletedCatalogIds: next.deletedCatalogIds ?? deletedCatalogIds,
         loggedFoods: next.loggedFoods ?? loggedFoods,
         loggedActivities: next.loggedActivities ?? loggedActivities,
         waterByDate: next.waterByDate ?? waterByDate,
@@ -922,6 +1000,31 @@ export function NutrioProvider({ children }: { children: React.ReactNode }) {
     return newFood;
   };
 
+  const updateCustomFood = async (
+    foodId: string,
+    updates: Partial<Omit<FoodItem, 'id'>>
+  ) => {
+    const nextCatalog = catalogFoods.map((f) =>
+      f.id === foodId ? { ...f, ...updates } : f
+    );
+    const nextLogged = loggedFoods.map((e) =>
+      e.food.id === foodId ? { ...e, food: { ...e.food, ...updates } } : e
+    );
+    setCatalogFoods(nextCatalog);
+    setLoggedFoods(nextLogged);
+    await persist({ catalogFoods: nextCatalog, loggedFoods: nextLogged });
+  };
+
+  const deleteCustomFood = async (foodId: string) => {
+    const nextCatalog = catalogFoods.filter((f) => f.id !== foodId);
+    const nextDeleted = deletedCatalogIds.includes(foodId)
+      ? deletedCatalogIds
+      : [...deletedCatalogIds, foodId];
+    setCatalogFoods(nextCatalog);
+    setDeletedCatalogIds(nextDeleted);
+    await persist({ catalogFoods: nextCatalog, deletedCatalogIds: nextDeleted });
+  };
+
   const toggleFavoriteFood = async (foodId: string) => {
     const nextCatalog = catalogFoods.map((f) =>
       f.id === foodId ? { ...f, isFavorite: !f.isFavorite } : f
@@ -1026,6 +1129,8 @@ export function NutrioProvider({ children }: { children: React.ReactNode }) {
         updateFoodIntake,
         removeFoodIntake,
         createCustomFood,
+        updateCustomFood,
+        deleteCustomFood,
         toggleFavoriteFood,
         addActivityLog,
         removeActivityLog,

@@ -16,7 +16,7 @@ import { useNutrio, MealType, FoodItem } from '@/context/NutrioContext';
 const MEALS: MealType[] = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
 
 export default function AddFoodIntakeScreen() {
-  const { meal } = useLocalSearchParams<{ meal?: string }>();
+  const { meal, tab } = useLocalSearchParams<{ meal?: string; tab?: string }>();
   const {
     themeMode,
     t,
@@ -41,7 +41,9 @@ export default function AddFoodIntakeScreen() {
   );
   const [mealDropdownOpen, setMealDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'Recent' | 'Favorites' | 'Personal'>('Recent');
+  const [activeTab, setActiveTab] = useState<'Recent' | 'Favorites' | 'Personal'>(
+    tab === 'Favorites' || tab === 'Personal' ? tab : 'Recent'
+  );
 
   // Multi-select basket matching Stage 4 Screens 31_Dark, 32_Dark, 33_Dark
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -235,8 +237,8 @@ export default function AddFoodIntakeScreen() {
 
       <View style={[styles.topDivider, { backgroundColor: theme.divider }]} />
 
-      {/* Food Catalog List inside rounded dark card matching 29_Dark / 31_Dark / 32_Dark */}
-      <ScrollView contentContainerStyle={styles.listContent}>
+      {/* Food Catalog List inside rounded dark card matching 29_Dark / 31_Dark / 32_Dark / Stage 6 Personal */}
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.listContent}>
         <View style={[styles.listCard, { backgroundColor: theme.card }]}>
           {filteredFoods.length === 0 ? (
             <View style={styles.emptyBox}>
@@ -303,7 +305,8 @@ export default function AddFoodIntakeScreen() {
                           {food.name}
                         </Text>
                         <Text style={[styles.foodMeta, { color: theme.textSecondary }]}>
-                          {food.calories} {t.kcal} , {food.servingGrams} gram
+                          {food.calories} {t.kcal} , {food.servingGrams}{' '}
+                          {food.unit === 'gram (g)' ? 'gram' : food.unit}
                         </Text>
                       </View>
                       <Ionicons

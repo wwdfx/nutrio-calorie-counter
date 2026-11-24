@@ -119,6 +119,9 @@ export interface TranslationStrings {
   totalLabel: string;
   deleteTitle: string;
   deleteFoodConfirm: string;
+  deletePersonalFoodConfirm: string;
+  editFood: string;
+  personalFoodDeletedToast: string;
   cannotBeUndone: string;
   yesDelete: string;
   foodLogDeletedToast: string;
@@ -341,6 +344,9 @@ const en: TranslationStrings = {
   totalLabel: 'Total',
   deleteTitle: 'Delete',
   deleteFoodConfirm: 'Sure you want to delete this food log?',
+  deletePersonalFoodConfirm: 'Sure you want to delete this personal food?',
+  editFood: 'Edit Food',
+  personalFoodDeletedToast: 'Personal food deleted!',
   cannotBeUndone: 'This action cannot be undone.',
   yesDelete: 'Yes, Delete',
   foodLogDeletedToast: 'Food log successfully deleted!',
@@ -557,6 +563,9 @@ const ru: TranslationStrings = {
   totalLabel: 'Итого',
   deleteTitle: 'Удалить',
   deleteFoodConfirm: 'Вы уверены, что хотите удалить эту запись?',
+  deletePersonalFoodConfirm: 'Вы уверены, что хотите удалить это личное блюдо?',
+  editFood: 'Редактировать блюдо',
+  personalFoodDeletedToast: 'Личное блюдо удалено!',
   cannotBeUndone: 'Это действие нельзя отменить.',
   yesDelete: 'Да, удалить',
   foodLogDeletedToast: 'Запись успешно удалена!',
@@ -773,6 +782,9 @@ const uk: TranslationStrings = {
   totalLabel: 'Всього',
   deleteTitle: 'Видалити',
   deleteFoodConfirm: 'Ви впевнені, що хочете видалити цей запис?',
+  deletePersonalFoodConfirm: 'Ви впевнені, що хочете видалити цю особисту страву?',
+  editFood: 'Редагувати страву',
+  personalFoodDeletedToast: 'Особисту страву видалено!',
   cannotBeUndone: 'Цю дію неможливо скасувати.',
   yesDelete: 'Так, видалити',
   foodLogDeletedToast: 'Запис успішно видалено!',
