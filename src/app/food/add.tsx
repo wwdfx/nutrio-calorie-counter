@@ -12,6 +12,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, getThemeColors } from '@/constants/theme';
 import { useNutrio, MealType, FoodItem } from '@/context/NutrioContext';
+import { SwipeableDeleteRow } from '@/components/SwipeableDeleteRow';
 
 const MEALS: MealType[] = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
 
@@ -28,6 +29,7 @@ export default function AddFoodIntakeScreen() {
     addFoodIntake,
     addMultipleFoodIntakes,
     createCustomFood,
+    deleteCustomFood,
   } = useNutrio();
   const theme = getThemeColors(themeMode);
 
@@ -61,6 +63,10 @@ export default function AddFoodIntakeScreen() {
   // Multi-select basket matching Stage 4 Screens 31_Dark, 32_Dark, 33_Dark
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [reviewOpen, setReviewOpen] = useState(false);
+
+  // Swipe-to-delete state on Personal tab (Stage 8 animation)
+  const [swipedFoodId, setSwipedFoodId] = useState<string | null>(null);
+  const [pendingDeleteFood, setPendingDeleteFood] = useState<FoodItem | null>(null);
 
   // Quick Log Modal State
   const [quickLogOpen, setQuickLogOpen] = useState(false);
@@ -102,6 +108,16 @@ export default function AddFoodIntakeScreen() {
     setSelectedIds([]);
     setReviewOpen(false);
     router.replace({ pathname: '/food/history', params: { meal: selectedMeal } });
+  };
+
+  const handleConfirmDeletePersonal = async () => {
+    if (!pendingDeleteFood) return;
+    const deletedId = pendingDeleteFood.id;
+    await deleteCustomFood(deletedId);
+    setSelectedIds((prev) => prev.filter((id) => id !== deletedId));
+    setSwipedFoodId(null);
+    setPendingDeleteFood(null);
+    setBottomToast(t.personalFoodDeletedToast);
   };
 
   const handleQuickLogSubmit = async () => {
@@ -232,7 +248,10 @@ export default function AddFoodIntakeScreen() {
                   styles.segmentBtn,
                   active && { backgroundColor: COLORS.primary },
                 ]}
-                onPress={() => setActiveTab(tab)}
+                onPress={() => {
+                  setActiveTab(tab);
+                  setSwipedFoodId(null);
+                }}
               >
                 <Text
                   style={[
@@ -284,55 +303,100 @@ export default function AddFoodIntakeScreen() {
           ) : (
             filteredFoods.map((food, idx) => {
               const isSelected = selectedIds.includes(food.id);
+              const isSwipeEnabled = activeTab === 'Personal';
+              const isSwipedOpen = swipedFoodId === food.id;
               return (
                 <View key={food.id}>
-                  <View style={styles.foodRow}>
-                    <TouchableOpacity
-                      style={[
-                        styles.plusCircleOutline,
-                        isSelected && {
-                          backgroundColor: COLORS.primary,
-                          borderColor: COLORS.primary,
-                        },
-                      ]}
-                      onPress={() => toggleSelectFood(food.id)}
-                    >
-                      <Ionicons
-                        name={isSelected ? 'checkmark' : 'add'}
-                        size={22}
-                        color={isSelected ? '#181A20' : theme.text}
-                      />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={styles.foodInfoTouch}
-                      onPress={() =>
-                        router.push({
-                          pathname: '/food/[id]',
-                          params: {
-                            id: food.id,
-                            meal: selectedMeal,
-                            fromTab: activeTab,
+                  <SwipeableDeleteRow
+                    enabled={isSwipeEnabled}
+                    isOpen={isSwipedOpen}
+                    onOpen={() => setSwipedFoodId(food.id)}
+                    onClose={() =>
+                      setSwipedFoodId((cur) => (cur === food.id ? null : cur))
+                    }
+                    onDeletePress={() => setPendingDeleteFood(food)}
+                    deleteAccessibilityLabel={`${t.deleteTitle} ${food.name}`}
+                    rightAccessory={
+                      <TouchableOpacity
+                        onPress={() =>
+                          router.push({
+                            pathname: '/food/[id]',
+                            params: {
+                              id: food.id,
+                              meal: selectedMeal,
+                              fromTab: activeTab,
+                            },
+                          })
+                        }
+                        style={{ padding: 4 }}
+                      >
+                        <Ionicons
+                          name="chevron-forward"
+                          size={20}
+                          color={theme.textSecondary}
+                        />
+                      </TouchableOpacity>
+                    }
+                  >
+                    <View style={styles.foodRow}>
+                      <TouchableOpacity
+                        style={[
+                          styles.plusCircleOutline,
+                          isSelected && {
+                            backgroundColor: COLORS.primary,
+                            borderColor: COLORS.primary,
                           },
-                        })
-                      }
-                    >
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.foodName, { color: theme.text }]}>
-                          {food.name}
-                        </Text>
-                        <Text style={[styles.foodMeta, { color: theme.textSecondary }]}>
-                          {food.calories} {t.kcal} , {food.servingGrams}{' '}
-                          {food.unit === 'gram (g)' ? 'gram' : food.unit}
-                        </Text>
-                      </View>
-                      <Ionicons
-                        name="chevron-forward"
-                        size={20}
-                        color={theme.textSecondary}
-                      />
-                    </TouchableOpacity>
-                  </View>
+                        ]}
+                        onPress={() => {
+                          if (isSwipedOpen) {
+                            setSwipedFoodId(null);
+                            return;
+                          }
+                          toggleSelectFood(food.id);
+                        }}
+                      >
+                        <Ionicons
+                          name={isSelected ? 'checkmark' : 'add'}
+                          size={22}
+                          color={isSelected ? '#181A20' : theme.text}
+                        />
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.foodInfoTouch}
+                        activeOpacity={0.75}
+                        onPress={() => {
+                          if (isSwipedOpen) {
+                            setSwipedFoodId(null);
+                            return;
+                          }
+                          router.push({
+                            pathname: '/food/[id]',
+                            params: {
+                              id: food.id,
+                              meal: selectedMeal,
+                              fromTab: activeTab,
+                            },
+                          });
+                        }}
+                        onLongPress={() => {
+                          if (isSwipeEnabled) {
+                            setSwipedFoodId(isSwipedOpen ? null : food.id);
+                          }
+                        }}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.foodName, { color: theme.text }]}>
+                            {food.name}
+                          </Text>
+                          <Text style={[styles.foodMeta, { color: theme.textSecondary }]}>
+                            {food.calories} {t.kcal} , {food.servingGrams}{' '}
+                            {food.unit === 'gram (g)' ? 'gram' : food.unit}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
+                  </SwipeableDeleteRow>
                   {idx < filteredFoods.length - 1 && (
                     <View style={[styles.divider, { backgroundColor: theme.divider }]} />
                   )}
@@ -474,6 +538,43 @@ export default function AddFoodIntakeScreen() {
             </View>
           </View>
         </TouchableOpacity>
+      </Modal>
+
+      {/* Delete Personal Food Confirmation Sheet triggered by Swipe-to-Delete */}
+      <Modal
+        visible={Boolean(pendingDeleteFood)}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setPendingDeleteFood(null)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: theme.card }]}>
+            <View style={[styles.sheetHandle, { backgroundColor: theme.inputBorder }]} />
+            <Text style={styles.deleteSheetTitle}>{t.deleteTitle}</Text>
+            <View style={[styles.modalDivider, { backgroundColor: theme.divider }]} />
+            <Text style={[styles.confirmQuestion, { color: theme.text }]}>
+              {t.deletePersonalFoodConfirm}
+            </Text>
+            <Text style={[styles.confirmSub, { color: theme.textSecondary }]}>
+              {t.cannotBeUndone}
+            </Text>
+            <View style={[styles.modalDivider, { backgroundColor: theme.divider }]} />
+            <View style={styles.deleteBtnRow}>
+              <TouchableOpacity
+                style={[styles.cancelPillBtn, { backgroundColor: theme.secondaryBtnBg }]}
+                onPress={() => setPendingDeleteFood(null)}
+              >
+                <Text style={{ fontWeight: '700', color: theme.text }}>{t.cancel}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.confirmDeleteBtn}
+                onPress={handleConfirmDeletePersonal}
+              >
+                <Text style={{ fontWeight: '800', color: '#181A20' }}>{t.yesDelete}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
 
       {/* Quick Log Modal */}
@@ -630,8 +731,8 @@ const styles = StyleSheet.create({
   },
   listCard: {
     borderRadius: 16,
-    paddingHorizontal: 18,
     paddingVertical: 6,
+    overflow: 'hidden',
   },
   foodRow: {
     flexDirection: 'row',
@@ -664,6 +765,49 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
+    marginHorizontal: 18,
+  },
+  modalDivider: {
+    height: 1,
+    width: '100%',
+    marginVertical: 16,
+  },
+  deleteSheetTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#F55A5A',
+    textAlign: 'center',
+  },
+  confirmQuestion: {
+    fontSize: 19,
+    fontWeight: '800',
+    textAlign: 'center',
+    lineHeight: 26,
+    marginBottom: 10,
+  },
+  confirmSub: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  deleteBtnRow: {
+    flexDirection: 'row',
+    gap: 14,
+  },
+  cancelPillBtn: {
+    flex: 1,
+    height: 54,
+    borderRadius: 1000,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmDeleteBtn: {
+    flex: 1,
+    height: 54,
+    borderRadius: 1000,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyBox: {
     padding: 32,

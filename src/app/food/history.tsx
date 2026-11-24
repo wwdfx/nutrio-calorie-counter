@@ -11,6 +11,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, getThemeColors } from '@/constants/theme';
 import { useNutrio, MealType, LoggedFoodEntry } from '@/context/NutrioContext';
+import { SwipeableDeleteRow } from '@/components/SwipeableDeleteRow';
 
 const MEALS: MealType[] = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
 
@@ -117,43 +118,16 @@ export default function MealHistoryScreen() {
 
               return (
                 <View key={entry.id}>
-                  <View style={styles.entryRow}>
-                    <TouchableOpacity
-                      style={[
-                        styles.entryMainTouch,
-                        isRevealed && { marginLeft: -18 },
-                      ]}
-                      activeOpacity={0.8}
-                      onPress={() =>
-                        isRevealed
-                          ? setRevealedEntryId(null)
-                          : setRevealedEntryId(entry.id)
-                      }
-                      onLongPress={() => setConfirmEntry(entry)}
-                    >
-                      <View style={styles.emojiSlot}>
-                        <Text style={{ fontSize: 36 }}>{entry.food.emoji}</Text>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.foodName, { color: theme.text }]}>
-                          {entry.food.name}
-                        </Text>
-                        <Text style={[styles.foodMeta, { color: theme.textSecondary }]}>
-                          {entryKcal} {t.kcal}
-                          {entryGrams > 0 ? ` , ${entryGrams} gram` : ''}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-
-                    {isRevealed ? (
-                      <TouchableOpacity
-                        style={styles.redDeleteSquare}
-                        onPress={() => setConfirmEntry(entry)}
-                        activeOpacity={0.85}
-                      >
-                        <Ionicons name="trash-outline" size={22} color="#FFFFFF" />
-                      </TouchableOpacity>
-                    ) : (
+                  <SwipeableDeleteRow
+                    enabled
+                    isOpen={isRevealed}
+                    onOpen={() => setRevealedEntryId(entry.id)}
+                    onClose={() =>
+                      setRevealedEntryId((cur) => (cur === entry.id ? null : cur))
+                    }
+                    onDeletePress={() => setConfirmEntry(entry)}
+                    deleteAccessibilityLabel={`${t.deleteTitle} ${entry.food.name}`}
+                    rightAccessory={
                       <TouchableOpacity
                         style={styles.chevronBtn}
                         onPress={() =>
@@ -173,11 +147,37 @@ export default function MealHistoryScreen() {
                           color={theme.textSecondary}
                         />
                       </TouchableOpacity>
-                    )}
-                  </View>
+                    }
+                  >
+                    <View style={styles.entryRow}>
+                      <TouchableOpacity
+                        style={styles.entryMainTouch}
+                        activeOpacity={0.8}
+                        onPress={() =>
+                          isRevealed
+                            ? setRevealedEntryId(null)
+                            : setRevealedEntryId(entry.id)
+                        }
+                        onLongPress={() => setConfirmEntry(entry)}
+                      >
+                        <View style={styles.emojiSlot}>
+                          <Text style={{ fontSize: 36 }}>{entry.food.emoji}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.foodName, { color: theme.text }]}>
+                            {entry.food.name}
+                          </Text>
+                          <Text style={[styles.foodMeta, { color: theme.textSecondary }]}>
+                            {entryKcal} {t.kcal}
+                            {entryGrams > 0 ? ` , ${entryGrams} gram` : ''}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
+                  </SwipeableDeleteRow>
 
                   {idx < entries.length - 1 && (
-                    <View style={[styles.divider, { backgroundColor: theme.divider }]} />
+                    <View style={[styles.dividerInset, { backgroundColor: theme.divider }]} />
                   )}
                 </View>
               );
@@ -308,13 +308,14 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: 16,
-    paddingHorizontal: 18,
     paddingVertical: 16,
+    overflow: 'hidden',
   },
   totalRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 18,
     marginBottom: 14,
   },
   totalLabel: {
@@ -327,7 +328,11 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    width: '100%',
+    marginHorizontal: 18,
+  },
+  dividerInset: {
+    height: 1,
+    marginHorizontal: 18,
   },
   emptyBox: {
     paddingVertical: 36,
